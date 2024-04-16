@@ -96,7 +96,7 @@ public class ModelOutputDto : Entity, ImodelOutput {
 
 Finally, go to the Program.cs file and add the following under settings retrieval and update the database:
 ```csharp
-builder.Services.AddSingleton<IModelService<CarDamageObjectDetectionModelInput, ModelOutputDto>, ModelService<ClassificationModelInput, ModelOutputDto>>();
+builder.Services.AddSingleton<IModelService<CarDamageObjectDetectionModelInput, ModelOutputDto>, ModelService<CarDamageObjectDetectionModelInput, ModelOutputDto>>();
 ```
 
 ## Step 4: Using the Service in the Controller
