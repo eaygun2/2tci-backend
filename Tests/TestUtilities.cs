@@ -16,8 +16,8 @@ namespace Tests
                     ModelPath = "C:\\Users\\enes1\\source\\repos\\2TCI_Backend\\Tests\\efficientnet-b0_model.onnx",
                     ImageHeight = 224,
                     ImageWidth = 224,
-                    InputColumnName = "input_2",
-                    OutputColumnName = "dense_5"
+                    InputColumnName = "input_1",
+                    OutputColumnName = "dense_2"
                 }
             };
         }
@@ -25,8 +25,8 @@ namespace Tests
         public static List<ModelOutputDto> GetMockEntities()
         {
             return new List<ModelOutputDto>() {
-                new() { Id = 1, ImageBase64String = "", PredictedClass = "Vehicle", Prediction = [0.88f, 0.44f] },
-                new() { Id = 2, ImageBase64String = "", PredictedClass = "Non-Vehicle", Prediction = [0.32f, 0.12f] }
+                new() { Id = 1, ImageBase64String = "", PredictedClass = "Vehicle", ProbabilityScores = [0.88f, 0.44f] },
+                new() { Id = 2, ImageBase64String = "", PredictedClass = "Non-Vehicle", ProbabilityScores = [0.32f, 0.12f] }
             };
         }
 

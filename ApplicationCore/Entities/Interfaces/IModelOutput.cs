@@ -2,7 +2,7 @@
 {
     public interface IModelOutput
     {
-        public float[]? Prediction { get; set; }
+        public float[]? ProbabilityScores { get; set; }
 
         public string? ImageBase64String { get; set; }
     }

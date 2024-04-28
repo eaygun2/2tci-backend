@@ -2,8 +2,8 @@
 {
     public interface IRepositoryBase<T> where T : class
     {
-        Task<T?>? GetById(int id);
-        Task<List<T>> GetAll();
+        T? GetById(int id);
+        List<T> GetAll();
 
         Task AddAsync(T t);
 

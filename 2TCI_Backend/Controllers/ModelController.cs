@@ -30,10 +30,11 @@ namespace _2TCI_Backend.Controllers
 
             // Predict
             var prediction = await _service.Predict(inputForModel) ?? throw new ArgumentNullException("Prediction came with no result");
-            var predictedClass = prediction.Prediction!.FirstOrDefault() > 0 ? "Vehicle" : "Non-Vehicle";
+            // [Non-vehicle probability score, Vehicle Probability score]
+            var predictedClass = prediction.ProbabilityScores![1] > 0.5 ? "Vehicle" : "Non-Vehicle";
 
             // Initialize a dto to save in database
-            var result = new ModelOutputDto() { ImageBase64String = inputForModel.ImageBase64String, PredictedClass = predictedClass, Prediction = prediction.Prediction };
+            var result = new ModelOutputDto() { ImageBase64String = inputForModel.ImageBase64String, PredictedClass = predictedClass, ProbabilityScores = prediction.ProbabilityScores };
 
             await _repository.AddAsync(result);
 

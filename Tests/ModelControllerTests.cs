@@ -31,8 +31,8 @@ namespace Tests
             var predictionResult = new ModelOutputDto
             {
                 ImageBase64String = inputDto.ImageBase64String,
-                PredictedClass = "Vehicle",
-                Prediction = [0.8f, 0.2f] // Example prediction probabilities
+                PredictedClass = "Non-Vehicle",
+                ProbabilityScores = [0.8f, 0.2f] // Example prediction probabilities
             };
 
             _service.Predict(inputDto).Returns(predictionResult);
@@ -48,7 +48,7 @@ namespace Tests
             Assert.NotNull(result);
             Assert.Equal(inputDto.ImageBase64String, result.ImageBase64String);
             Assert.Equal(predictionResult.PredictedClass, result.PredictedClass);
-            Assert.Equal(predictionResult.Prediction, result.Prediction);
+            Assert.Equal(predictionResult.ProbabilityScores, result.ProbabilityScores);
 
             // Verify repository interaction
             await _repository.Received(1).AddAsync(Arg.Any<ModelOutputDto>());

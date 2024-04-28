@@ -1,11 +1,12 @@
 ﻿using ApplicationCore.DomainServices.Interfaces;
 using ApplicationCore.Entities;
+using ApplicationCore.Entities.Interfaces;
 using Infrastructure.Data;
 using System.Data.Entity;
 
 namespace Infrastructure.Repositories
 {
-    public class RepositoryBase<TEntity> : IRepositoryBase<TEntity> where TEntity : EntityBase, new()
+    public class RepositoryBase<TEntity> : IRepositoryBase<TEntity> where TEntity : EntityBase, IModelOutput, new()
     {
         private readonly CarInspectionsDbContext _context;
 
@@ -24,25 +25,25 @@ namespace Infrastructure.Repositories
 
         public async Task Delete(TEntity t)
         {
-            if (t == null || await GetById(t.Id) == null) throw new NullReferenceException("Given entity cannot be null or does not exist");
+            if (t == null || GetById(t.Id) == null) throw new NullReferenceException("Given entity cannot be null or does not exist");
 
             _context.Set<TEntity>().Remove(t);
             await _context.SaveChangesAsync();
         }
 
-        public async Task<List<TEntity>> GetAll()
+        public List<TEntity> GetAll()
         {
-            return await _context.Set<TEntity>().ToListAsync();
+            return _context.Set<TEntity>().ToList();
         }
 
-        public async Task<TEntity?>? GetById(int id)
+        public TEntity? GetById(int id)
         {
-            return await _context.Set<TEntity>().FirstOrDefaultAsync(x => x.Id == id);
+            return _context.Set<TEntity>().FirstOrDefault(x => x.Id == id);
         }
 
         public async Task Update(TEntity t)
         {
-            if (t == null || await GetById(t.Id) == null) throw new NullReferenceException("Given entity cannot be null or does not exist");
+            if (t == null || GetById(t.Id) == null) throw new NullReferenceException("Given entity cannot be null or does not exist");
 
             _context.Set<TEntity>().Update(t);
             await _context.SaveChangesAsync();
