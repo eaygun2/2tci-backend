@@ -50,7 +50,6 @@ public class ModelSettingsBase
 }
 ```
 #### Purpose of Using ModelBaseSettings
-- Generic Model Service: This approach supports a generic model service that can handle multiple models without creating separate classes for each model's settings.
 - Single Configuration Class: Instead of maintaining multiple classes with similar properties, a single ModelBaseSettings class consolidates all model settings within a unified structure.
 - Dynamic Settings Retrieval: Using an enum specified in the request body, such as ModelType, the application can dynamically determine and fetch the appropriate model settings from appsettings.json.
 
@@ -70,7 +69,7 @@ public enum ModelType
 
 #### Purpose of Using ModelType enum
 - Dynamic Model Selection: The ModelType enum allows for dynamic selection of model configurations based on the specified model type.
-- Consistency with Entity Class and AppSettings: Ensure that the enum name (ModelType) aligns with the entity class name (ModelInputDto) and the corresponding section in appsettings.json (ModelSettings). This consistency simplifies and standardizes the process of retrieving and applying model settings.
+- Consistency with Entity Class and AppSettings: Ensure that the enum variable name aligns with the corresponding section in appsettings.json (ModelSettings). This consistency simplifies and standardizes the process of retrieving and applying model settings.
 
 This structured approach enhances flexibility and maintainability, allowing for seamless integration of various machine learning models into the backend system.
 
@@ -93,7 +92,6 @@ ModelSettings GetModelSettings(ModelType type)
 ```
 #### Purpose of GetModelSettings Method
 Dynamic Model Configuration Retrieval: The GetModelSettings method retrieves model settings based on the specified ModelType, ensuring that the correct configurations are applied to the corresponding machine learning model.
-Error Handling: The method includes error handling to handle scenarios where model settings for a specific ModelType are not configured properly, preventing unexpected runtime issues.
 
 By integrating the ModelType enum and updating the GetModelSettings method, your application is equipped to dynamically manage and apply model configurations based on user-defined model types, enhancing adaptability and robustness in the backend system configuration process.
 
@@ -141,9 +139,6 @@ Finally, integrate the model service with dependency injection in the applicatio
 builder.Services.AddSingleton<IModelService<CarDamageObjectDetectionModelInput, ModelOutputDto>, ModelService<CarDamageObjectDetectionModelInput, ModelOutputDto>>();
 ```
 
-#### Purpose of Registering Model Service
-- Dependency Injection: By registering the model service with CarDamageObjectDetectionModelInput and ModelOutputDto types, the application gains access to functionalities for utilizing these entities in model inference and backend operations.
-
 By following these steps, you establish a structured approach to handling input and output data for machine learning models within your backend system, ensuring compatibility and efficiency in model integration and utilization. Adjust these implementations as per your specific project requirements and model configurations.
 
 ## Step 4: Using the Service in the Controller
@@ -161,8 +156,8 @@ public ModelController(IModelService< CarDamageObjectDetectionModelInput, ModelO
 }
 ```
 Now, choose one of the two options to use the service in the endpoint:
-- Use it on the existing endpoint with conditional logic to save computing power. This is because the current endpoint used is making use of multiple models, where each model fills in another model.
-- Create a new endpoint if the model doesn't fit within the current models' architecture.
+- Use it on the existing endpoint with conditional logic to save computing power.
+- Create a new endpoint if the model doesn't fit within the current endpoint.
 
 ## Step 5: Adding Tests
 Ensure thorough testing to validate the functionality and reliability of the newly integrated machine learning model components.
@@ -172,7 +167,7 @@ If a new output entity (ModelOutputDto) is created, ensure to test it with the g
 
 #### Purpose of Repository Testing
 - Data Persistence: Validate that the repository correctly handles data operations (e.g., saving, retrieving, updating) for the ModelOutputDto entity.
-- Error Handling: Ensure robust error handling within repository methods to handle various scenarios (e.g., data not found, database connection issues).
+- Error Handling: Ensure robust error handling within repository methods to handle various scenarios (e.g., data not found).
 
 ### 2. Testing the Model Service
 Test the model service (IModelService) with the newly created input entity (CarDamageObjectDetectionModelInput) to verify its functionality and accuracy in processing model predictions.
@@ -187,9 +182,6 @@ Test the controller (ModelController) with the new implementations to identify a
 #### Purpose of Controller Testing
 - Endpoint Functionality: Validate that controller actions correctly handle incoming requests and invoke the appropriate model service methods based on request parameters (e.g., model type).
 - Error Handling and Response Format: Ensure that the controller returns appropriate responses (e.g., success or error messages, HTTP status codes) based on the outcome of model predictions and data processing.
-Considerations for Testing
-- Unit Testing vs. Integration Testing: Implement both unit tests (isolated tests for individual components) and integration tests (testing interactions between components) to cover different aspects of functionality.
-Mocking Dependencies: Use mocking frameworks to simulate dependencies (e.g., database access, external services) in tests, ensuring focused testing of specific components.
 
 #### Example Test Scenarios
 ##### Repository Test:
