@@ -37,7 +37,7 @@ namespace Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Predictions");
+                    b.ToTable("ClassificationPredictions");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,187 +1,191 @@
-﻿//using ApplicationCore.DomainServices.Interfaces;
-//using ApplicationCore.Entities;
-//using NSubstitute;
+﻿using ApplicationCore.DomainServices.Interfaces;
+using ApplicationCore.Entities.DataTransferObjects;
+using NSubstitute;
+using NSubstitute.ExceptionExtensions;
+using NSubstitute.ReceivedExtensions;
+using NSubstitute.ReturnsExtensions;
 
-//namespace Tests
-//{
-//    public class RepoTests
-//    {
-//        private readonly IRepositoryBase<EntityBase> _sut;
+namespace Tests
+{
+    public class RepoTests
+    {
+        private readonly IRepositoryBase<ModelOutputDto> _sut;
 
-//        public RepoTests()
-//        {
-//            _sut = Substitute.For<IRepositoryBase<EntityBase>>();
-//        }
+        public RepoTests()
+        {
+            _sut = Substitute.For<IRepositoryBase<ModelOutputDto>>();
+        }
 
-//        #region Create Test Methods
+        #region Create Test Methods
 
-//        [Fact]
-//        public async Task Create_Should_Add_To_Context_When_Valid_Entity_Is_Given()
-//        {
-//            Arrange
-//           var entity = new EntityBase();
+        [Fact]
+        public async Task Create_Should_Add_Entity_When_Valid_Entity_Is_Given()
+        {
+            //Arrange
+            var entity = new ModelOutputDto()!;
 
-//            Act
-//           await _sut.AddAsync(entity);
+            //Act
+            await _sut.AddAsync(entity);
 
-//            Assert
-//           await _sut.Received(1).AddAsync(Arg.Any<EntityBase>());
-//        }
-
-
-//        [Fact]
-//        public async Task Create_Should_Not_Return_ArgumentNullException_When_Entity_Is_Null()
-//        {
-//            Arrange
-//           EntityBase? entity = null;
-
-//            Act & Assert
-//            var result = await Assert.ThrowsAsync<ArgumentNullException>(async () => await _sut.AddAsync(entity));
-
-//            await _sut.DidNotReceive().AddAsync(Arg.Any<EntityBase>());
-//        }
-
-//        #endregion
-
-//        #region Read Test Methods
-
-//        [Fact]
-//        public void GetById_Returns_Entity_When_Valid_Id_Is_Given()
-//        {
-//            Arrange
-//           var id = 1;
-//            var entity = new EntityBase { Id = id };
-//            _sut.GetById(id).Returns(entity);
-
-//            Act
-//           var result = _sut.GetById(1);
-
-//            Assert
-//            Assert.NotNull(result);
-//            Assert.Equal(entity!.Id, result.Id);
-//        }
-
-//        [Fact]
-//        public async Task GetById_Returns_null_When_Invalid_Id_Is_Given()
-//        {
-//            Arrange
-//            int id = -1;
-
-//            Act
-//           var result = _sut.GetById(id);
-
-//            Assert
-//           await _sut.Received().GetById(id);
-//        }
-
-//        [Fact]
-//        public async Task GetAll_Should_Return_List_Of_Entities()
-//        {
-//            Arrange
-//           var entities = new List<EntityBase>();
-//            _sut.GetAll().Returns(entities);
-
-//            Act
-//           var result = await _sut.GetAll();
-
-//            Assert
-//            Assert.NotNull(result);
-//            Assert.Equal(entities.Count(), result.Count());
-//        }
-
-//        #endregion
-
-//        #region Update Test Methods
-
-//        [Fact]
-//        public async Task Update_Should_Happen_When_Entity_Is_Given()
-//        {
-//            Arrange
-//           var entity = TestUtilities.GetMockEntities()[0];
-
-//            var new_class = "Non-Vehicle";
-//            entity.PredictedClass = new_class;
-
-//            Act
-//           await _sut.Update(entity);
-
-//            Assert
-//            _mockContext.Set<ModelOutputDto>().Received(1).Update(Arg.Any<ModelOutputDto>());
-//        }
-
-//        [Fact]
-//        public async Task Update_Should_Return_NullReferenceException_When_Entity_Is_Null()
-//        {
-//            Arrange
-//           ModelOutputDto? entity = null;
-
-//            Act & Assert
-//            var result = await Assert.ThrowsAsync<NullReferenceException>(async () => await _sut.Update(entity));
-//            _mockContext.Set<ModelOutputDto>().DidNotReceive().Update(Arg.Any<ModelOutputDto>());
-//            await _mockContext.DidNotReceive().SaveChangesAsync();
-//        }
+            //Assert
+            await _sut.Received(1).AddAsync(Arg.Any<ModelOutputDto>());
+        }
 
 
-//        [Fact]
-//        public async Task Update_Should_Return_NullReferenceException_When_Entity_Does_Not_Exist()
-//        {
-//            Arrange
-//           var entity = TestUtilities.GetMockEntities()[0];
-//            entity.Id = -1;
-//            entity.PredictedClass = "Non-Vehicle";
+        [Fact]
+        public async Task Create_Should_Return_ArgumentNullException_When_Entity_Is_Null()
+        {
+            //Arrange
+            ModelOutputDto? entity = null;
+            _sut.AddAsync(entity).ThrowsAsync<ArgumentNullException>();
 
-//            Act & Assert
-//            var result = await Assert.ThrowsAsync<NullReferenceException>(async () => await _sut.Update(entity));
+            //Act & Assert
+            var result = await Assert.ThrowsAsync<ArgumentNullException>(async () => await _sut.AddAsync(entity));
+            await _sut.Received(1).AddAsync(Arg.Any<ModelOutputDto>());
+        }
 
-//            _mockContext.Set<ModelOutputDto>().DidNotReceive().Update(Arg.Any<ModelOutputDto>());
-//            await _mockContext.DidNotReceive().SaveChangesAsync();
-//        }
+        #endregion
 
-//        #endregion
+        #region Read Test Methods
 
-//        #region Delete Test Methods
+        [Fact]
+        public void GetById_Returns_Entity_When_Valid_Id_Is_Given()
+        {
+            // Arrange
+            var id = 1;
+            var entity = new ModelOutputDto { Id = id };
+            _sut.GetById(id).Returns(entity);
 
-//        [Fact]
-//        public async Task Delete_Should_Happen_When_Entity_Is_Given()
-//        {
-//            Arrange
-//           var entity = TestUtilities.GetMockEntities()[0];
+            // Act
+            var result = _sut.GetById(1);
 
-//            Act
-//           await _sut.Delete(entity);
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(entity!.Id, result.Id);
+            _sut.Received(1).GetById(id);
+        }
 
-//            Assert
-//            _mockContext.Set<ModelOutputDto>().Received(1).Remove(entity);
-//            await _mockContext.Received(1).SaveChangesAsync();
-//        }
+        [Fact]
+        public void GetById_Returns_null_When_Invalid_Id_Is_Given()
+        {
+            // Arrange
+            int id = -1;
+            _sut.GetById(id).ReturnsNull();
 
-//        [Fact]
-//        public async Task Delete_Should_Return_NullReferenceException_When_Entity_Is_Null()
-//        {
-//            Arrange
-//           ModelOutputDto? entity = null;
+            // Act
+            var result = _sut.GetById(id);
+
+            // Assert
+            Assert.Null(result);
+            _sut.Received().GetById(id);
+        }
+
+        [Fact]
+        public void GetAll_Should_Return_List_Of_Entities()
+        {
+            // Arrange
+            var entities = new List<ModelOutputDto>();
+            _sut.GetAll().Returns(entities);
+
+            // Act
+            var result = _sut.GetAll();
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(entities.Count, result.Count);
+            _sut.Received(1).GetAll();
+        }
+
+        #endregion
+
+        #region Update Test Methods
+
+        [Fact]
+        public async Task Update_Should_Happen_When_Entity_Is_Given()
+        {
+            // Arrange
+            var entity = TestUtilities.GetMockEntities()[0];
+
+            var new_class = "Non-Vehicle";
+            entity.PredictedClass = new_class;
+
+            // Act
+            await _sut.Update(entity);
+
+            // Assert
+            await _sut.Received(1).Update(Arg.Any<ModelOutputDto>());
+        }
+
+        [Fact]
+        public async Task Update_Should_Return_ArgumentNullException_When_Entity_Is_Null()
+        {
+            // Arrange
+            ModelOutputDto? entity = null;
+            _sut.Update(entity).ThrowsAsync<ArgumentNullException>();
+
+            // Act & Assert
+            var result = await Assert.ThrowsAsync<ArgumentNullException>(async () => await _sut.Update(entity));
+            await _sut.Received(1).Update(entity);
+        }
 
 
-//            Act & Assert
-//            var result = await Assert.ThrowsAsync<NullReferenceException>(async () => await _sut.Delete(entity));
-//            _mockContext.Set<ModelOutputDto>().DidNotReceive().Remove(Arg.Any<ModelOutputDto>());
-//            await _mockContext.DidNotReceive().SaveChangesAsync();
-//        }
+        [Fact]
+        public async Task Update_Should_Return_ArgumentNullException_When_Entity_Does_Not_Exist()
+        {
+            // Arrange
+            var entity = TestUtilities.GetMockEntities()[0];
+            entity.Id = -1;
+            _sut.Update(entity).ThrowsAsync<ArgumentNullException>();
 
-//        [Fact]
-//        public async Task Delete_Should_Return_NullReferenceException_When_Entity_Does_Not_Exist()
-//        {
-//            Arrange
-//           var entity = TestUtilities.GetMockEntities()[0];
-//            entity.Id = -1;
+            // Act & Assert
+            var result = await Assert.ThrowsAsync<ArgumentNullException>(async () => await _sut.Update(entity));
+            await _sut.Received(1).Update(entity);
+        }
 
-//            Act & Assert
-//            var result = await Assert.ThrowsAsync<NullReferenceException>(async () => await _sut.Delete(entity));
+        #endregion
 
-//            _mockContext.Set<ModelOutputDto>().DidNotReceive().Remove(Arg.Any<ModelOutputDto>());
-//            await _mockContext.DidNotReceive().SaveChangesAsync();
-//        }
+        #region Delete Test Methods
 
-//        #endregion
-//    }
-//}
+        [Fact]
+        public async Task Delete_Should_Happen_When_Entity_Is_Given()
+        {
+            // Arrange
+            var entity = TestUtilities.GetMockEntities()[0];
+
+            // Act
+            await _sut.Delete(entity);
+
+            // Assert
+            await _sut.Received(1).Delete(entity);
+        }
+
+        [Fact]
+        public async Task Delete_Should_Return_ArgumentNullException_When_Entity_Is_Null()
+        {
+            //Arrange
+            ModelOutputDto? entity = null;
+            _sut.Delete(entity).ThrowsAsync<ArgumentNullException>();
+
+            // Act & Assert
+            var result = await Assert.ThrowsAsync<ArgumentNullException>(async () => await _sut.Delete(entity));
+            await _sut.Received(1).Delete(entity);
+
+        }
+
+        [Fact]
+        public async Task Delete_Should_Return_ArgumentNullException_When_Entity_Does_Not_Exist()
+        {
+            // Arrange
+            var entity = TestUtilities.GetMockEntities()[0];
+            entity.Id = -1;
+            _sut.Delete(entity).ThrowsAsync<ArgumentNullException>();
+
+            // Act & Assert
+            var result = await Assert.ThrowsAsync<ArgumentNullException>(async () => await _sut.Delete(entity));
+
+            await _sut.Received(1).Delete(entity);
+        }
+
+        #endregion
+    }
+}

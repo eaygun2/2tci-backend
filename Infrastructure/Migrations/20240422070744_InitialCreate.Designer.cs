@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(CarInspectionsDbContext))]
-    [Migration("20240408091141_InitialCreate")]
+    [Migration("20240422070744_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -40,7 +40,7 @@ namespace Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Predictions");
+                    b.ToTable("ClassificationPredictions");
                 });
 #pragma warning restore 612, 618
         }

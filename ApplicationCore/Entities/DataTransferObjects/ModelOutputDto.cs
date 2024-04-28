@@ -7,10 +7,10 @@ namespace ApplicationCore.Entities.DataTransferObjects
     public class ModelOutputDto : EntityBase, IModelOutput
     {
         // TODO: For now, change the variables yourself, but this NEEDS to stay. Later, change it so that appsettings changes this.
-        [ColumnName("dense_5")]
+        [ColumnName("dense_2")]
         [VectorType(1)]
         [NotMapped]
-        public float[]? Prediction { get; set; }
+        public float[]? ProbabilityScores { get; set; }
 
         public string? PredictedClass { get; set; }
 
