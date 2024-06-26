@@ -361,3 +361,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/2TCI_Backend/Assets/license-plate-detection_model.onnx
+/2TCI_Backend/Assets/vehicle-detection_model.onnx
