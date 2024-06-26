@@ -4,7 +4,8 @@ using ApplicationCore.Entities.DataTransferObjects;
 using ApplicationCore.Entities.Interfaces;
 using Microsoft.Extensions.Options;
 using Microsoft.ML;
-using Microsoft.ML.Transforms.Onnx;
+using Microsoft.ML.OnnxRuntime;
+using Microsoft.ML.OnnxRuntime.Tensors;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
@@ -15,34 +16,66 @@ namespace Infrastructure.Implementations
 {
     public class ModelService<TInput, TOutput> : IModelService<TInput, TOutput> where TInput : class, IModelInput where TOutput : class, IModelOutput, new()
     {
-        private readonly MLContext _mlContext;
         private readonly ModelSettingsBase _modelSettingsBase;
+        private ModelSettings _settings;
 
         public ModelService(IOptions<ModelSettingsBase> modelSettingsBase)
         {
-            _mlContext = new MLContext();
             _modelSettingsBase = modelSettingsBase.Value ?? throw new ArgumentNullException("Error when importing ModelBaseSettings");
         }
 
         async Task<TOutput> IModelService<TInput, TOutput>.Predict(ModelInputDto input)
         {
             // Get the settings of the model
-            var modelSettings = GetModelSettings(input.ModelType) ?? throw new ArgumentNullException("Settings are not loaded correctly");
+            _settings = GetModelSettings(input.ModelType) ?? throw new ArgumentNullException("Settings are not loaded correctly");
+
+            var session = new InferenceSession(_settings.ModelPath);
+            var dimensions = session.InputMetadata.First().Value.Dimensions;
+
+            var tensor = new DenseTensor<float>(new[] { dimensions[0], dimensions[1], dimensions[2] });
 
             // Convert from base64string to an float array, so that model can take it as an input
-            float[] imageData = ConvertBase64StringToFloatArray(input.ImageBase64String!, modelSettings.ImageWidth, modelSettings.ImageHeight);
+            var imageData = ConvertBase64StringToImage(input.ImageBase64String!, dimensions[1], dimensions[2]);
 
-            // Get prediction pipeline
-            var predictionPipeline = GetPredictionPipeline(modelSettings);
+            imageData.ProcessPixelRows(processor =>
+            {
+                for (int y = 0; y < processor.Height; y++)
+                {
+                    var rowSpan = processor.GetRowSpan(y);
+                    for (int x = 0; x < processor.Width; x++)
+                    {
+                        tensor[0, x, y] = rowSpan[x].R;
+                        tensor[1, x, y] = rowSpan[x].G;
+                        tensor[2, x, y] = rowSpan[x].B;
+                    }
+                }
+            });
 
-            // Create input data as IDataView
-            var predictionEngine = _mlContext.Model.CreatePredictionEngine<TInput, TOutput>(predictionPipeline);
+            var namedValue = NamedOnnxValue.CreateFromTensor(session.InputMetadata.First().Key, tensor);
 
-            // Extract the prediction result
-            var prediction = predictionEngine.Predict(CreateModelInpput(imageData));
+            var outputs = session.Run(new List<NamedOnnxValue> { namedValue });
 
-            // Return the predicted single value
-            return prediction;
+            return ProcessOutputs<TOutput>(outputs);
+        }
+
+        private TOutput ProcessOutputs<TOutput>(IDisposableReadOnlyCollection<DisposableNamedOnnxValue> outputs) where TOutput : IModelOutput, new()
+        {
+            var result = new TOutput();
+
+            if (typeof(TOutput) == typeof(DetectionModelOutput))
+            {
+                var detectionResult = result as DetectionModelOutput;
+
+                detectionResult!.Box = outputs.First(o => o.Name == _settings.OutputColumnNames![0]).AsEnumerable<float>().ToArray();
+                var scoreTensor = outputs.First(o => o.Name == _settings.OutputColumnNames![2]).AsTensor<float>();
+                detectionResult!.Score = scoreTensor.Length > 0 ? scoreTensor[0] : 0.0f;
+            }
+            else
+            {
+                throw new InvalidOperationException("Unsupported output type");
+            }
+
+            return result;
         }
 
         private ModelSettings GetModelSettings(ModelType type)
@@ -50,47 +83,19 @@ namespace Infrastructure.Implementations
             // For new model, add 
             return type switch
             {
-                ModelType.ImageClassification => _modelSettingsBase.ImageClassification!,
-                ModelType.CarDamageObjectDetection => _modelSettingsBase.CarDamageObjectDetection!,
+                ModelType.CarObjectDetection => _modelSettingsBase.CarObjectDetection!,
+                ModelType.LicensePlateObjectDetection => _modelSettingsBase.LicensePlateObjectDetection!,
                 ModelType.Undefined => throw new ArgumentNullException($"Unsupported input type: {type}"),
             };
         }
 
-        private OnnxTransformer GetPredictionPipeline(ModelSettings settings)
-        {
-            try
-            {
-                // Initialize pipeline
-                var pipeline = _mlContext.Transforms.ApplyOnnxModel(modelFile: settings.ModelPath,
-                                                        inputColumnName: settings.InputColumnName,
-                                                        outputColumnName: settings.OutputColumnName);
-
-                // Fit empty data
-                var emptyDv = _mlContext.Data.LoadFromEnumerable(Array.Empty<TInput>());
-
-                return pipeline.Fit(emptyDv);
-            } catch(Exception e)
-            {
-                throw new Exception("Failed to load the model", e);
-            }
-        }
-
-        // 
-        private static TInput CreateModelInpput(float[] imageData)
-        {
-            var modelInput = Activator.CreateInstance<TInput>();
-            modelInput.ImageData = imageData;
-
-            return modelInput;
-        }
 
         /// <summary>
         /// Converts an base64string to a float array, where each pixel's RGB values are normalized to [0, 1].
         /// This is done because the input of the models takes an Vector shaped float.
         /// </summary>
         /// <param name="image">The input image of type Image<Rgb24> to be converted.</param>
-        /// <returns>A flattened float array representing the normalized RGB values of the image pixels.</returns>
-        private static float[] ConvertBase64StringToFloatArray(string base64Image, int modelWidth, int modelHeight)
+        private static Image<Rgb24> ConvertBase64StringToImage(string base64Image, int modelWidth, int modelHeight)
         {
             // Valid input validation
             if (string.IsNullOrEmpty(base64Image)) throw new ArgumentNullException("Base64String is not given");
@@ -106,35 +111,9 @@ namespace Infrastructure.Implementations
             using var image = Image.Load<Rgb24>(imageBytes);
 
             // Resize the image to size of what model input needs
-            image.Mutate(x => x.Resize(new Size(modelWidth, modelHeight)));
+            var resizedImage = image.Clone(x => x.Resize(modelWidth, modelHeight));
 
-            // Calculate the width and height of the image
-            int width = image.Width;
-            int height = image.Height;
-
-            // Create a float array to store the flattened image data (RGB values)
-            float[] floatArray = new float[width * height * 3];
-
-            // Initialize the index for accessing the float array
-            int index = 0;
-
-            // Loop through each pixel of the image
-            for (int y = 0; y < height; y++)
-            {
-                for (int x = 0; x < width; x++)
-                {
-                    // Get the RGB values of the current pixel
-                    Rgb24 pixel = image[x, y];
-
-                    // Normalize the RGB values to the range [0, 1] and store them in the float array
-                    floatArray[index++] = pixel.R / 255.0f; // Red channel (normalized)
-                    floatArray[index++] = pixel.G / 255.0f; // Green channel (normalized)
-                    floatArray[index++] = pixel.B / 255.0f; // Blue channel (normalized)
-                }
-            }
-
-            // Return the flattened float array representing the image data
-            return floatArray;
+            return resizedImage;
         }
 
         public static bool IsBase64String(string base64String)

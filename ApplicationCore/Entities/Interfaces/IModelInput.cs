@@ -2,6 +2,5 @@
 {
     public interface IModelInput
     {
-        public float[]? ImageData { get; set; }
     }
 }

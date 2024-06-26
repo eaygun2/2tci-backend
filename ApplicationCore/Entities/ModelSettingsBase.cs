@@ -4,6 +4,8 @@
     public class ModelSettingsBase
     {
         public ModelSettings? ImageClassification { get; set; }
-        public ModelSettings? CarDamageObjectDetection { get; set; }
+        public ModelSettings? CarObjectDetection { get; set; }
+
+        public ModelSettings? LicensePlateObjectDetection { get; set; }
     }
 }

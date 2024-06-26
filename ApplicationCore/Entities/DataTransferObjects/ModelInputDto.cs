@@ -7,14 +7,11 @@ namespace ApplicationCore.Entities.DataTransferObjects
     public enum ModelType
     {
         Undefined = 0,
-        ImageClassification = 1,
-        CarDamageObjectDetection = 2,
-        ObjectDetection = 3,
-        OCR = 4
+        CarObjectDetection = 1,
+        LicensePlateObjectDetection = 2,
     }
 
-
-    public class ModelInputDto
+    public class ModelInputDto : IModelInput
     {
         [Required]
         public string? ImageBase64String { get; set; }

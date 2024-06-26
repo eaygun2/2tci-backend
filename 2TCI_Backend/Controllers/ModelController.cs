@@ -3,6 +3,8 @@ using ApplicationCore.Entities;
 using Microsoft.AspNetCore.Mvc;
 using ApplicationCore.Entities.DataTransferObjects;
 using ApplicationCore.DomainServices.Interfaces;
+using System.Drawing.Imaging;
+using System.Drawing;
 
 namespace _2TCI_Backend.Controllers
 {
@@ -10,13 +12,14 @@ namespace _2TCI_Backend.Controllers
     [Route("api/models")]
     public class ModelController : ControllerBase
     {
-        private readonly IModelService<ClassificationModelInput, ModelOutputDto> _service;
-        private readonly IRepositoryBase<ModelOutputDto> _repository;
+        private readonly IRepositoryBase<DetectionModelOutput> _detectionrepository;
 
-        public ModelController(IModelService<ClassificationModelInput, ModelOutputDto> service, IRepositoryBase<ModelOutputDto> repository)
+        private readonly IModelService<ModelInputDto, DetectionModelOutput> _detectionService;
+
+        public ModelController(IModelService<ModelInputDto, DetectionModelOutput> detectionService, IRepositoryBase<DetectionModelOutput> detectionrepository)
         {
-            _service = service;
-            _repository = repository;
+            _detectionService = detectionService;
+            _detectionrepository = detectionrepository;
         }
 
         [HttpPost("classify")]
@@ -28,17 +31,74 @@ namespace _2TCI_Backend.Controllers
                 return BadRequest();
             }
 
-            // Predict
-            var prediction = await _service.Predict(inputForModel) ?? throw new ArgumentNullException("Prediction came with no result");
-            // [Non-vehicle probability score, Vehicle Probability score]
-            var predictedClass = prediction.ProbabilityScores![1] > 0.5 ? "Vehicle" : "Non-Vehicle";
+            var carObjectDetectionResults = await _detectionService.Predict(inputForModel);
 
-            // Initialize a dto to save in database
-            var result = new ModelOutputDto() { ImageBase64String = inputForModel.ImageBase64String, PredictedClass = predictedClass, ProbabilityScores = prediction.ProbabilityScores };
+            if (carObjectDetectionResults.Box?.Length <= 0)
+            {
+                return StatusCode(StatusCodes.Status200OK, "No Vehicle Present");
+            }
 
-            await _repository.AddAsync(result);
+            carObjectDetectionResults.Class = "Vehicle";
+            carObjectDetectionResults.ImageBase64String = inputForModel.ImageBase64String;
 
-            return StatusCode(StatusCodes.Status200OK, result);
+            await _detectionrepository.AddAsync(carObjectDetectionResults);
+
+            var box = carObjectDetectionResults.Box;
+            var changedImage = ApplyChangeToImage(inputForModel.ImageBase64String!, (int)box[0], (int)box[1], (int)box[2], (int)box[3]);
+
+            inputForModel.ModelType = ModelType.LicensePlateObjectDetection;
+
+            var licenseDetectionResults = await _detectionService.Predict(inputForModel);
+
+            if (licenseDetectionResults.Box?.Length > 0)
+            {
+                licenseDetectionResults.ImageBase64String = inputForModel.ImageBase64String;
+                licenseDetectionResults.Class = "Vehicle License Plate";
+                await _detectionrepository.AddAsync(licenseDetectionResults);
+            }
+
+            return StatusCode(StatusCodes.Status200OK, new Dictionary<string, object> {
+                { "Vehicle License Plate", carObjectDetectionResults },
+                { "License Detection Results", licenseDetectionResults }
+            });
+        }
+
+        private string ApplyChangeToImage(string base64, int xMin, int yMin, int xMax, int yMax)
+        {
+            // Convert Base64 to byte array
+            byte[] imageBytes = Convert.FromBase64String(base64);
+
+            // Create a MemoryStream from byte array to work with Bitmap
+            using (MemoryStream ms = new MemoryStream(imageBytes))
+            {
+                using (Bitmap originalImage = new Bitmap(ms))
+                {
+                    // Create a Graphics object from the original image
+                    using (Graphics graphics = Graphics.FromImage(originalImage))
+                    {
+                        // Draw the rectangle on the image
+                        using (Pen pen = new Pen(Color.Red, 2)) // Red color and 2-pixel width
+                        {
+                            graphics.DrawRectangle(pen, (xMin), (yMin + 50), 950, 800);
+                        }
+                    }
+
+                    // Save the modified image to a MemoryStream
+                    using (MemoryStream msModified = new MemoryStream())
+                    {
+                        originalImage.Save(msModified, System.Drawing.Imaging.ImageFormat.Png);
+
+                        // Convert the MemoryStream to byte array (Base64 string representation)
+                        byte[] imageBytesModified = msModified.ToArray();
+                        string modifiedBase64 = Convert.ToBase64String(imageBytesModified);
+
+                        // Optionally, you can save the modified image to a file here
+                        originalImage.Save("Test.png");
+
+                        return modifiedBase64;
+                    }
+                }
+            }
         }
     }
 }

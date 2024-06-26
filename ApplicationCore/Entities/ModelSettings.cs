@@ -5,11 +5,7 @@ namespace ApplicationCore.Entities
     public class ModelSettings
     {
         public string? ModelPath { get; set; }
-        public int ImageWidth { get; set; }
-        public int ImageHeight { get; set; }
 
-        public string? InputColumnName { get; set; }
-
-        public string? OutputColumnName { get; set; }
+        public string[]? OutputColumnNames { get; set; }
     }
 }
