@@ -217,7 +217,6 @@ public async Task Create_Should_Add_Entity_When_Valid_Entity_Is_Given()
 ```
 ##### Service Test:
 ```csharp
-Copy code
 [Fact]
 public void Constructor_Should_ThrowArgumentNullException_When_ModelSettingsBase_IsNull()
 {
