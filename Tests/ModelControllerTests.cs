@@ -12,14 +12,14 @@ namespace Tests
     public class ModelControllerTests
     {
         private readonly ModelController _sut;
-        private readonly IModelService<ClassificationModelInput, ModelOutputDto> _service;
-        private readonly IRepositoryBase<ModelOutputDto> _repository;
+        private readonly IModelService<ModelInputDto, DetectionModelOutput> _service;
+        private readonly IRepositoryBase<DetectionModelOutput> _repository;
 
 
         public ModelControllerTests()
         {
-            _service = Substitute.For<IModelService<ClassificationModelInput, ModelOutputDto>>();
-            _repository = Substitute.For<IRepositoryBase<ModelOutputDto>>();
+            _service = Substitute.For<IModelService<ModelInputDto, DetectionModelOutput>>();
+            _repository = Substitute.For<IRepositoryBase<DetectionModelOutput>>();
             _sut = new ModelController(_service, _repository);
         }
 
@@ -27,12 +27,14 @@ namespace Tests
         public async Task Predict_Should_Return_200OK_When_Everything_Is_Valid()
         {
             // Arrange
-            var inputDto = TestUtilities.MockClassificationModelInput();
-            var predictionResult = new ModelOutputDto
+            var inputDto = TestUtilities.MockCarObjectDetectionModelInput();
+
+            var predictionResult = new DetectionModelOutput
             {
                 ImageBase64String = inputDto.ImageBase64String,
-                PredictedClass = "Non-Vehicle",
-                ProbabilityScores = [0.8f, 0.2f] // Example prediction probabilities
+                Class = "Vehicle",
+                Score = 0.92f,
+                Box = [4.2f, 200f, 238f, 1027f]
             };
 
             _service.Predict(inputDto).Returns(predictionResult);
@@ -44,14 +46,9 @@ namespace Tests
             Assert.NotNull(response);
             Assert.Equal(StatusCodes.Status200OK, response.StatusCode);
 
-            var result = response.Value as ModelOutputDto;
-            Assert.NotNull(result);
-            Assert.Equal(inputDto.ImageBase64String, result.ImageBase64String);
-            Assert.Equal(predictionResult.PredictedClass, result.PredictedClass);
-            Assert.Equal(predictionResult.ProbabilityScores, result.ProbabilityScores);
-
             // Verify repository interaction
-            await _repository.Received(1).AddAsync(Arg.Any<ModelOutputDto>());
+            // TODO: Add more objects later, f.e. OCR, Classification
+            await _repository.Received(2).AddAsync(Arg.Any<DetectionModelOutput>());
         }
 
         [Fact]
@@ -67,23 +64,25 @@ namespace Tests
             Assert.IsType<BadRequestResult>(result);
 
             await _service.DidNotReceive().Predict(Arg.Any<ModelInputDto>());
-            await _repository.DidNotReceive().AddAsync(Arg.Any<ModelOutputDto>());
+            await _repository.DidNotReceive().AddAsync(Arg.Any<DetectionModelOutput>());
         }
 
 
         [Fact]
-        public async Task Predict_Should_Return_ArgumentNullException_When_Prediction_Is_Null()
+        public async Task Predict_Should_Return_Status_Code_200_When_Prediction_Is_Null()
         {
             // Arrange
-            var inputDto = TestUtilities.MockClassificationModelInput();
-            ModelOutputDto predictionResult = null;
+            var inputDto = TestUtilities.MockCarObjectDetectionModelInput();
+            DetectionModelOutput predictionResult = null;
 
             _service.Predict(inputDto)!.Returns(predictionResult);
 
-            // Act & Assert
-            var result = await Assert.ThrowsAsync<ArgumentNullException>(async () => await _sut.Predict(inputDto));
-            await _repository.DidNotReceive().AddAsync(Arg.Any<ModelOutputDto>());
-        }
+            // Act
+            var response = await _sut.Predict(inputDto) as ObjectResult;
 
+            // Assert
+            Assert.Equal(StatusCodes.Status200OK, response!.StatusCode);
+            await _repository.DidNotReceive().AddAsync(Arg.Any<DetectionModelOutput>());
+        }
     }
 }

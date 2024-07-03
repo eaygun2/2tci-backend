@@ -2,7 +2,6 @@ using ApplicationCore.DomainServices.Interfaces;
 using ApplicationCore.DomainServices.Services.Int;
 using ApplicationCore.Entities;
 using ApplicationCore.Entities.DataTransferObjects;
-using ApplicationCore.Entities.Interfaces;
 using Infrastructure.Data;
 using Infrastructure.Implementations;
 using Infrastructure.Repositories;
@@ -19,7 +18,6 @@ builder.Services.Configure<ModelSettingsBase>(builder.Configuration.GetSection("
 // Add services to the container.
 builder.Services.AddScoped(typeof(IRepositoryBase<>), typeof(RepositoryBase<>));
 builder.Services.AddSingleton<IModelService<ModelInputDto, DetectionModelOutput>, ModelService<ModelInputDto, DetectionModelOutput>>();
-//builder.Services.AddSingleton<IModelService<CarObjectDetectionModelInput, ModelOutputDto>, ModelService<CarObjectDetectionModelInput, ModelOutputDto>>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -38,9 +36,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
 app.UseCors(opt => opt.WithOrigins("*").AllowAnyMethod().AllowAnyHeader());
+
+
+app.UseHttpsRedirection();
 
 app.UseAuthorization();
 

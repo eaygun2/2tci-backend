@@ -3,7 +3,6 @@ using ApplicationCore.Entities;
 using Microsoft.AspNetCore.Mvc;
 using ApplicationCore.Entities.DataTransferObjects;
 using ApplicationCore.DomainServices.Interfaces;
-using System.Drawing.Imaging;
 using System.Drawing;
 
 namespace _2TCI_Backend.Controllers
@@ -33,7 +32,7 @@ namespace _2TCI_Backend.Controllers
 
             var carObjectDetectionResults = await _detectionService.Predict(inputForModel);
 
-            if (carObjectDetectionResults.Box?.Length <= 0)
+            if (carObjectDetectionResults == null || carObjectDetectionResults.Box?.Length <= 0)
             {
                 return StatusCode(StatusCodes.Status200OK, "No Vehicle Present");
             }
@@ -47,7 +46,6 @@ namespace _2TCI_Backend.Controllers
             var changedImage = ApplyChangeToImage(inputForModel.ImageBase64String!, (int)box[0], (int)box[1], (int)box[2], (int)box[3]);
 
             inputForModel.ModelType = ModelType.LicensePlateObjectDetection;
-
             var licenseDetectionResults = await _detectionService.Predict(inputForModel);
 
             if (licenseDetectionResults.Box?.Length > 0)
@@ -58,7 +56,7 @@ namespace _2TCI_Backend.Controllers
             }
 
             return StatusCode(StatusCodes.Status200OK, new Dictionary<string, object> {
-                { "Vehicle License Plate", carObjectDetectionResults },
+                { "Vehicle Detection Results", carObjectDetectionResults },
                 { "License Detection Results", licenseDetectionResults }
             });
         }

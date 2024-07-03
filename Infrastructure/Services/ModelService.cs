@@ -3,7 +3,6 @@ using ApplicationCore.Entities;
 using ApplicationCore.Entities.DataTransferObjects;
 using ApplicationCore.Entities.Interfaces;
 using Microsoft.Extensions.Options;
-using Microsoft.ML;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using SixLabors.ImageSharp;
@@ -18,19 +17,20 @@ namespace Infrastructure.Implementations
     {
         private readonly ModelSettingsBase _modelSettingsBase;
         private ModelSettings _settings;
+        private InferenceSession _session;
 
         public ModelService(IOptions<ModelSettingsBase> modelSettingsBase)
         {
-            _modelSettingsBase = modelSettingsBase.Value ?? throw new ArgumentNullException("Error when importing ModelBaseSettings");
+            _modelSettingsBase = modelSettingsBase.Value ?? throw new ArgumentNullException(nameof(ModelSettingsBase), "Error when importing ModelBaseSettings");
         }
 
         async Task<TOutput> IModelService<TInput, TOutput>.Predict(ModelInputDto input)
         {
-            // Get the settings of the model
-            _settings = GetModelSettings(input.ModelType) ?? throw new ArgumentNullException("Settings are not loaded correctly");
+            _settings = GetModelSettings(input.ModelType);
 
-            var session = new InferenceSession(_settings.ModelPath);
-            var dimensions = session.InputMetadata.First().Value.Dimensions;
+            _session = new InferenceSession(_settings.ModelPath);
+
+            var dimensions = _session.InputMetadata.First().Value.Dimensions;
 
             var tensor = new DenseTensor<float>(new[] { dimensions[0], dimensions[1], dimensions[2] });
 
@@ -51,9 +51,9 @@ namespace Infrastructure.Implementations
                 }
             });
 
-            var namedValue = NamedOnnxValue.CreateFromTensor(session.InputMetadata.First().Key, tensor);
+            var namedValue = NamedOnnxValue.CreateFromTensor(_session.InputMetadata.First().Key, tensor);
 
-            var outputs = session.Run(new List<NamedOnnxValue> { namedValue });
+            using var outputs = _session.Run(new List<NamedOnnxValue> { namedValue });
 
             return ProcessOutputs<TOutput>(outputs);
         }
@@ -67,12 +67,7 @@ namespace Infrastructure.Implementations
                 var detectionResult = result as DetectionModelOutput;
 
                 detectionResult!.Box = outputs.First(o => o.Name == _settings.OutputColumnNames![0]).AsEnumerable<float>().ToArray();
-                var scoreTensor = outputs.First(o => o.Name == _settings.OutputColumnNames![2]).AsTensor<float>();
-                detectionResult!.Score = scoreTensor.Length > 0 ? scoreTensor[0] : 0.0f;
-            }
-            else
-            {
-                throw new InvalidOperationException("Unsupported output type");
+                detectionResult.Score = outputs.First(o => o.Name == _settings.OutputColumnNames![2]).AsTensor<float>().FirstOrDefault();
             }
 
             return result;
@@ -85,7 +80,7 @@ namespace Infrastructure.Implementations
             {
                 ModelType.CarObjectDetection => _modelSettingsBase.CarObjectDetection!,
                 ModelType.LicensePlateObjectDetection => _modelSettingsBase.LicensePlateObjectDetection!,
-                ModelType.Undefined => throw new ArgumentNullException($"Unsupported input type: {type}"),
+                ModelType.Undefined => throw new ArgumentNullException(nameof(ModelType), $"Unsupported input type: {type}"),
             };
         }
 
@@ -95,25 +90,23 @@ namespace Infrastructure.Implementations
         /// This is done because the input of the models takes an Vector shaped float.
         /// </summary>
         /// <param name="image">The input image of type Image<Rgb24> to be converted.</param>
-        private static Image<Rgb24> ConvertBase64StringToImage(string base64Image, int modelWidth, int modelHeight)
+        private static Image<Rgb24> ConvertBase64StringToImage(string base64String, int modelWidth, int modelHeight)
         {
             // Valid input validation
-            if (string.IsNullOrEmpty(base64Image)) throw new ArgumentNullException("Base64String is not given");
+            if (string.IsNullOrEmpty(base64String)) throw new ArgumentNullException(nameof(base64String), "Base64String is not given");
 
-            if (!IsBase64String(base64Image)) throw new FormatException("Invalid imageData");
+            if (!IsBase64String(base64String)) throw new FormatException("Invalid imageData");
 
             if (modelHeight <= 0 || modelWidth <= 0) throw new ArgumentNullException("Invalid image width or height");
 
             // Decode Base64 string to byte array
-            byte[] imageBytes = Convert.FromBase64String(base64Image);
+            byte[] imageBytes = Convert.FromBase64String(base64String);
 
             // Load the image using SixLabors.ImageSharp
             using var image = Image.Load<Rgb24>(imageBytes);
 
             // Resize the image to size of what model input needs
-            var resizedImage = image.Clone(x => x.Resize(modelWidth, modelHeight));
-
-            return resizedImage;
+            return image.Clone(x => x.Resize(modelWidth, modelHeight));
         }
 
         public static bool IsBase64String(string base64String)
