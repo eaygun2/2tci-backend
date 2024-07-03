@@ -2,7 +2,6 @@
 using ApplicationCore.Entities;
 using ApplicationCore.Entities.Interfaces;
 using Infrastructure.Data;
-using System.Data.Entity;
 
 namespace Infrastructure.Repositories
 {

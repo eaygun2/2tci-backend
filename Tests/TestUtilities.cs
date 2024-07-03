@@ -1,6 +1,5 @@
 ﻿using ApplicationCore.Entities;
 using ApplicationCore.Entities.DataTransferObjects;
-using NSubstitute;
 
 namespace Tests
 {
@@ -19,9 +18,9 @@ namespace Tests
             };
         }
 
-        public static List<DetectionModelOutput> GetMockEntities()
+        public static List<DetectionModelOutputDto> GetMockEntities()
         {
-            return new List<DetectionModelOutput>() {
+            return new List<DetectionModelOutputDto>() {
                 new() { Id = 1, ImageBase64String = "", Class = "Vehicle", Score = 0.88f, Box = [23f, 230f, 45f, 68f] },
                 new() { Id = 2, ImageBase64String = "", Class = "Non-Vehicle", Score = 0.32f, Box = [] }
             };

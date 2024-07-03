@@ -1,8 +1,8 @@
 ﻿using ApplicationCore.Entities.Interfaces;
 
-namespace ApplicationCore.Entities
+namespace ApplicationCore.Entities.DataTransferObjects
 {
-    public class DetectionModelOutput : EntityBase, IModelOutput
+    public class DetectionModelOutputDto : EntityBase, IModelOutput
     {
         public string? ImageBase64String { get; set; }
         public float[]? Box { get; set; }

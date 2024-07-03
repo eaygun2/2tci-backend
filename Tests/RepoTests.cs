@@ -1,5 +1,5 @@
 ﻿using ApplicationCore.DomainServices.Interfaces;
-using ApplicationCore.Entities;
+using ApplicationCore.Entities.DataTransferObjects;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using NSubstitute.ReceivedExtensions;
@@ -9,11 +9,11 @@ namespace Tests
 {
     public class RepoTests
     {
-        private readonly IRepositoryBase<DetectionModelOutput> _sut;
+        private readonly IRepositoryBase<DetectionModelOutputDto> _sut;
 
         public RepoTests()
         {
-            _sut = Substitute.For<IRepositoryBase<DetectionModelOutput>>();
+            _sut = Substitute.For<IRepositoryBase<DetectionModelOutputDto>>();
         }
 
         #region Create Test Methods
@@ -22,13 +22,13 @@ namespace Tests
         public async Task Create_Should_Add_Entity_When_Valid_Entity_Is_Given()
         {
             //Arrange
-            var entity = new DetectionModelOutput()!;
+            var entity = new DetectionModelOutputDto()!;
 
             //Act
             await _sut.AddAsync(entity);
 
             //Assert
-            await _sut.Received(1).AddAsync(Arg.Any<DetectionModelOutput>());
+            await _sut.Received(1).AddAsync(Arg.Any<DetectionModelOutputDto>());
         }
 
 
@@ -36,12 +36,12 @@ namespace Tests
         public async Task Create_Should_Return_ArgumentNullException_When_Entity_Is_Null()
         {
             //Arrange
-            DetectionModelOutput? entity = null;
+            DetectionModelOutputDto? entity = null;
             _sut.AddAsync(entity).ThrowsAsync<ArgumentNullException>();
 
             //Act & Assert
             var result = await Assert.ThrowsAsync<ArgumentNullException>(async () => await _sut.AddAsync(entity));
-            await _sut.Received(1).AddAsync(Arg.Any<DetectionModelOutput>());
+            await _sut.Received(1).AddAsync(Arg.Any<DetectionModelOutputDto>());
         }
 
         #endregion
@@ -53,7 +53,7 @@ namespace Tests
         {
             // Arrange
             var id = 1;
-            var entity = new DetectionModelOutput { Id = id };
+            var entity = new DetectionModelOutputDto { Id = id };
             _sut.GetById(id).Returns(entity);
 
             // Act
@@ -84,7 +84,7 @@ namespace Tests
         public void GetAll_Should_Return_List_Of_Entities()
         {
             // Arrange
-            var entities = new List<DetectionModelOutput>();
+            var entities = new List<DetectionModelOutputDto>();
             _sut.GetAll().Returns(entities);
 
             // Act
@@ -113,14 +113,14 @@ namespace Tests
             await _sut.Update(entity);
 
             // Assert
-            await _sut.Received(1).Update(Arg.Any<DetectionModelOutput>());
+            await _sut.Received(1).Update(Arg.Any<DetectionModelOutputDto>());
         }
 
         [Fact]
         public async Task Update_Should_Return_ArgumentNullException_When_Entity_Is_Null()
         {
             // Arrange
-            DetectionModelOutput? entity = null;
+            DetectionModelOutputDto? entity = null;
             _sut.Update(entity).ThrowsAsync<ArgumentNullException>();
 
             // Act & Assert
@@ -163,7 +163,7 @@ namespace Tests
         public async Task Delete_Should_Return_ArgumentNullException_When_Entity_Is_Null()
         {
             //Arrange
-            DetectionModelOutput? entity = null;
+            DetectionModelOutputDto? entity = null;
             _sut.Delete(entity).ThrowsAsync<ArgumentNullException>();
 
             // Act & Assert

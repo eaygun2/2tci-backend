@@ -24,13 +24,15 @@ namespace Infrastructure.Implementations
             _modelSettingsBase = modelSettingsBase.Value ?? throw new ArgumentNullException(nameof(ModelSettingsBase), "Error when importing ModelBaseSettings");
         }
 
-        async Task<TOutput> IModelService<TInput, TOutput>.Predict(ModelInputDto input)
+        async Task<TOutput> IModelService<TInput, TOutput>.Predict(ModelInputDto input, string associatedClass)
         {
             _settings = GetModelSettings(input.ModelType);
 
             _session = new InferenceSession(_settings.ModelPath);
 
             var dimensions = _session.InputMetadata.First().Value.Dimensions;
+
+            var outputNames = _session.OutputNames.ToArray();
 
             var tensor = new DenseTensor<float>(new[] { dimensions[0], dimensions[1], dimensions[2] });
 
@@ -55,19 +57,27 @@ namespace Infrastructure.Implementations
 
             using var outputs = _session.Run(new List<NamedOnnxValue> { namedValue });
 
-            return ProcessOutputs<TOutput>(outputs);
+            return ProcessOutputs<TOutput>(outputs, outputNames, input.ImageBase64String!, associatedClass);
         }
 
-        private TOutput ProcessOutputs<TOutput>(IDisposableReadOnlyCollection<DisposableNamedOnnxValue> outputs) where TOutput : IModelOutput, new()
+        private TOutput ProcessOutputs<TOutput>(IDisposableReadOnlyCollection<DisposableNamedOnnxValue> outputs, string[] outputNames, string base64String, string associatedClass) where TOutput : IModelOutput, new()
         {
             var result = new TOutput();
 
-            if (typeof(TOutput) == typeof(DetectionModelOutput))
+            if (typeof(TOutput) == typeof(DetectionModelOutputDto))
             {
-                var detectionResult = result as DetectionModelOutput;
+                var detectionResult = result as DetectionModelOutputDto;
 
-                detectionResult!.Box = outputs.First(o => o.Name == _settings.OutputColumnNames![0]).AsEnumerable<float>().ToArray();
-                detectionResult.Score = outputs.First(o => o.Name == _settings.OutputColumnNames![2]).AsTensor<float>().FirstOrDefault();
+                // It can predict more boxes. First one is the box with the best prediction score
+                detectionResult!.Box = outputs.First(o => o.Name == outputNames![0]).AsEnumerable<float>().Take(4).ToArray();
+                detectionResult.Score = outputs.First(o => o.Name == outputNames![2]).AsTensor<float>().FirstOrDefault();
+
+                detectionResult.ImageBase64String = base64String;
+
+                if(detectionResult.Box.Length > 0)
+                {
+                    detectionResult.Class = associatedClass;
+                }
             }
 
             return result;
@@ -75,7 +85,7 @@ namespace Infrastructure.Implementations
 
         private ModelSettings GetModelSettings(ModelType type)
         {
-            // For new model, add 
+            // For new model, add enum here
             return type switch
             {
                 ModelType.CarObjectDetection => _modelSettingsBase.CarObjectDetection!,

@@ -7,8 +7,7 @@ namespace Infrastructure.Data
 {
     public class CarInspectionsDbContext : DbContext
     {
-        public DbSet<ModelOutputDto> ClassificationPredictions { get; set; }
-        public DbSet<DetectionModelOutput> CarObjectDetectionPredictions { get; set; }
+        public DbSet<DetectionModelOutputDto> CarObjectDetectionPredictions { get; set; }
 
 
         public CarInspectionsDbContext(DbContextOptions<CarInspectionsDbContext> options) : base(options) { }

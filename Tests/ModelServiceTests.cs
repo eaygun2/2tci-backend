@@ -4,12 +4,13 @@ using ApplicationCore.Entities.DataTransferObjects;
 using Infrastructure.Implementations;
 using Microsoft.Extensions.Options;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 namespace Tests
 {
     public class ModelServiceTests
     {
-        private IModelService<ModelInputDto, DetectionModelOutput> _sut;
+        private IModelService<ModelInputDto, DetectionModelOutputDto> _sut;
         private readonly IOptions<ModelSettingsBase> _modelSettingsBase;
 
         public ModelServiceTests()
@@ -17,7 +18,7 @@ namespace Tests
             _modelSettingsBase = Substitute.For<IOptions<ModelSettingsBase>>();
             _modelSettingsBase.Value.Returns(TestUtilities.MockModelSettingsBase());
 
-            _sut = Substitute.For<ModelService<ModelInputDto, DetectionModelOutput>>(_modelSettingsBase);
+            _sut = Substitute.For<ModelService<ModelInputDto, DetectionModelOutputDto>>(_modelSettingsBase);
         }
 
         #region Convert Base64String to float[] Tests
@@ -28,10 +29,10 @@ namespace Tests
         {
             // Arrange
             var input = new ModelInputDto { ModelType = ModelType.CarObjectDetection, ImageBase64String = "" };
-
+            _sut.Predict(input, "").ThrowsAsync<ArgumentNullException>();
 
             // Act & Assert
-            var result = await Assert.ThrowsAsync<ArgumentNullException>(async () => await _sut.Predict(input));
+            var result = await Assert.ThrowsAsync<ArgumentNullException>(async () => await _sut.Predict(input, ""));
             Assert.Equal("base64String", result.ParamName);
         }
 
@@ -40,11 +41,11 @@ namespace Tests
         {
             // Arrange
             var input = new ModelInputDto { ModelType = ModelType.CarObjectDetection, ImageBase64String = "a" };
-
+            _sut.Predict(input, "").ThrowsAsync<FormatException>();
             // Act & Assert
             // Param name not checked, since FormatException does not inherit from ArgumentException (field: ParamName)
             // TODO: Optional: Assert for equal error message
-            var result = await Assert.ThrowsAsync<FormatException>(async () => await _sut.Predict(input));
+            var result = await Assert.ThrowsAsync<FormatException>(async () => await _sut.Predict(input, ""));
         }
 
         #endregion
@@ -58,7 +59,7 @@ namespace Tests
             _modelSettingsBase.Value.Returns((ModelSettingsBase)null);
 
             // Act & Assert
-            var exception = Assert.Throws<ArgumentNullException>(() => new ModelService<ModelInputDto, DetectionModelOutput>(_modelSettingsBase));
+            var exception = Assert.Throws<ArgumentNullException>(() => new ModelService<ModelInputDto, DetectionModelOutputDto>(_modelSettingsBase));
             Assert.Equal("ModelSettingsBase", exception.ParamName);
         }
 
@@ -69,7 +70,7 @@ namespace Tests
             var input = new ModelInputDto() { ImageBase64String = "" };
 
             // Act & Assert
-            var result = await Assert.ThrowsAsync<ArgumentNullException>(async () => await _sut.Predict(input));
+            var result = await Assert.ThrowsAsync<ArgumentNullException>(async () => await _sut.Predict(input, ""));
             Assert.Equal("ModelType", result.ParamName);
         }
 
@@ -81,7 +82,7 @@ namespace Tests
             var input = new ModelInputDto() { ImageBase64String = "" };
 
             // Act & Assert
-            var result = await Assert.ThrowsAsync<ArgumentNullException>(async () => await _sut.Predict(input));
+            var result = await Assert.ThrowsAsync<ArgumentNullException>(async () => await _sut.Predict(input, ""));
             Assert.Equal("ModelType", result.ParamName);
         }
 
@@ -94,9 +95,12 @@ namespace Tests
         {
             // Arrange
             var input = TestUtilities.MockCarObjectDetectionModelInput();
+            var output = TestUtilities.GetMockEntities()[0];
+
+            _sut.Predict(input, "Vehicle").Returns(output);
 
             // Act
-            var prediction = await _sut.Predict(input);
+            var prediction = await _sut.Predict(input, "");
 
             // Assert
             Assert.NotNull(prediction);

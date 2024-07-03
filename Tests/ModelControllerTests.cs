@@ -12,15 +12,15 @@ namespace Tests
     public class ModelControllerTests
     {
         private readonly ModelController _sut;
-        private readonly IModelService<ModelInputDto, DetectionModelOutput> _service;
-        private readonly IRepositoryBase<DetectionModelOutput> _repository;
+        private readonly IModelService<ModelInputDto, DetectionModelOutputDto> _service;
+        private readonly IRepositoryBase<DetectionModelOutputDto> _repository;
 
 
         public ModelControllerTests()
         {
-            _service = Substitute.For<IModelService<ModelInputDto, DetectionModelOutput>>();
-            _repository = Substitute.For<IRepositoryBase<DetectionModelOutput>>();
-            _sut = new ModelController(_service, _repository);
+            _service = Substitute.For<IModelService<ModelInputDto, DetectionModelOutputDto>>();
+            _repository = Substitute.For<IRepositoryBase<DetectionModelOutputDto>>();
+            _sut = Substitute.For<ModelController>(_service, _repository);
         }
 
         [Fact]
@@ -29,7 +29,7 @@ namespace Tests
             // Arrange
             var inputDto = TestUtilities.MockCarObjectDetectionModelInput();
 
-            var predictionResult = new DetectionModelOutput
+            var predictionResult = new DetectionModelOutputDto
             {
                 ImageBase64String = inputDto.ImageBase64String,
                 Class = "Vehicle",
@@ -37,7 +37,7 @@ namespace Tests
                 Box = [4.2f, 200f, 238f, 1027f]
             };
 
-            _service.Predict(inputDto).Returns(predictionResult);
+            _service.Predict(inputDto, "Vehicle").Returns(predictionResult);
 
             // Act
             var response = await _sut.Predict(inputDto) as ObjectResult;
@@ -48,7 +48,7 @@ namespace Tests
 
             // Verify repository interaction
             // TODO: Add more objects later, f.e. OCR, Classification
-            await _repository.Received(2).AddAsync(Arg.Any<DetectionModelOutput>());
+            await _repository.Received(2).AddAsync(Arg.Any<DetectionModelOutputDto>());
         }
 
         [Fact]
@@ -63,8 +63,8 @@ namespace Tests
             // Assert
             Assert.IsType<BadRequestResult>(result);
 
-            await _service.DidNotReceive().Predict(Arg.Any<ModelInputDto>());
-            await _repository.DidNotReceive().AddAsync(Arg.Any<DetectionModelOutput>());
+            await _service.DidNotReceive().Predict(Arg.Any<ModelInputDto>(), "");
+            await _repository.DidNotReceive().AddAsync(Arg.Any<DetectionModelOutputDto>());
         }
 
 
@@ -73,16 +73,16 @@ namespace Tests
         {
             // Arrange
             var inputDto = TestUtilities.MockCarObjectDetectionModelInput();
-            DetectionModelOutput predictionResult = null;
+            DetectionModelOutputDto predictionResult = null;
 
-            _service.Predict(inputDto)!.Returns(predictionResult);
+            _service.Predict(inputDto, "")!.Returns(predictionResult);
 
             // Act
             var response = await _sut.Predict(inputDto) as ObjectResult;
 
             // Assert
             Assert.Equal(StatusCodes.Status200OK, response!.StatusCode);
-            await _repository.DidNotReceive().AddAsync(Arg.Any<DetectionModelOutput>());
+            await _repository.DidNotReceive().AddAsync(Arg.Any<DetectionModelOutputDto>());
         }
     }
 }

@@ -17,7 +17,7 @@ builder.Services.Configure<ModelSettingsBase>(builder.Configuration.GetSection("
 
 // Add services to the container.
 builder.Services.AddScoped(typeof(IRepositoryBase<>), typeof(RepositoryBase<>));
-builder.Services.AddSingleton<IModelService<ModelInputDto, DetectionModelOutput>, ModelService<ModelInputDto, DetectionModelOutput>>();
+builder.Services.AddSingleton<IModelService<ModelInputDto, DetectionModelOutputDto>, ModelService<ModelInputDto, DetectionModelOutputDto>>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
