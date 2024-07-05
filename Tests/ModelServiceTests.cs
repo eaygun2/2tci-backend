@@ -29,7 +29,7 @@ namespace Tests
         {
             // Arrange
             var input = new ModelInputDto { ModelType = ModelType.CarObjectDetection, ImageBase64String = "" };
-            _sut.Predict(input, "").ThrowsAsync<ArgumentNullException>();
+            _sut.When(x => x.Predict(input, "")).Do(x => { throw new ArgumentNullException(); });
 
             // Act & Assert
             var result = await Assert.ThrowsAsync<ArgumentNullException>(async () => await _sut.Predict(input, ""));
@@ -95,9 +95,6 @@ namespace Tests
         {
             // Arrange
             var input = TestUtilities.MockCarObjectDetectionModelInput();
-            var output = TestUtilities.GetMockEntities()[0];
-
-            _sut.Predict(input, "Vehicle").Returns(output);
 
             // Act
             var prediction = await _sut.Predict(input, "");
