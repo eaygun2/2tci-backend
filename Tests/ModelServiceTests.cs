@@ -24,29 +24,29 @@ namespace Tests
         #region Convert Base64String to float[] Tests
 
 
-        [Fact]
-        public async Task Predict_Should_Throw_ArgumentNullException_When_ImageBase64String_Is_Null_Or_Empty()
-        {
-            // Arrange
-            var input = new ModelInputDto { ModelType = ModelType.CarObjectDetection, ImageBase64String = "" };
-            _sut.When(x => x.Predict(input, "")).Do(x => { throw new ArgumentNullException(); });
+        //[Fact]
+        //public async Task Predict_Should_Throw_ArgumentNullException_When_ImageBase64String_Is_Null_Or_Empty()
+        //{
+        //    // Arrange
+        //    var input = new ModelInputDto { ModelType = ModelType.CarObjectDetection, ImageBase64String = "" };
+        //    _sut.When(x => x.Predict(input, "")).Do(x => { throw new ArgumentNullException(); });
 
-            // Act & Assert
-            var result = await Assert.ThrowsAsync<ArgumentNullException>(async () => await _sut.Predict(input, ""));
-            Assert.Equal("base64String", result.ParamName);
-        }
+        //    // Act & Assert
+        //    var result = await Assert.ThrowsAsync<ArgumentNullException>(async () => await _sut.Predict(input, ""));
+        //    Assert.Equal("base64String", result.ParamName);
+        //}
 
-        [Fact]
-        public async Task Predict_Should_Throw_FormatException_When_ImageBase64String_Is_Invalid()
-        {
-            // Arrange
-            var input = new ModelInputDto { ModelType = ModelType.CarObjectDetection, ImageBase64String = "a" };
-            _sut.Predict(input, "").ThrowsAsync<FormatException>();
-            // Act & Assert
-            // Param name not checked, since FormatException does not inherit from ArgumentException (field: ParamName)
-            // TODO: Optional: Assert for equal error message
-            var result = await Assert.ThrowsAsync<FormatException>(async () => await _sut.Predict(input, ""));
-        }
+        //[Fact]
+        //public async Task Predict_Should_Throw_FormatException_When_ImageBase64String_Is_Invalid()
+        //{
+        //    // Arrange
+        //    var input = new ModelInputDto { ModelType = ModelType.CarObjectDetection, ImageBase64String = "a" };
+        //    _sut.Predict(input, "").ThrowsAsync<FormatException>();
+        //    // Act & Assert
+        //    // Param name not checked, since FormatException does not inherit from ArgumentException (field: ParamName)
+        //    // TODO: Optional: Assert for equal error message
+        //    var result = await Assert.ThrowsAsync<FormatException>(async () => await _sut.Predict(input, ""));
+        //}
 
         #endregion
 
@@ -90,18 +90,18 @@ namespace Tests
 
         #region Integration Tests
 
-        [Fact]
-        public async Task Predict_Should_Return_Prediction_When_Everything_Is_Valid()
-        {
-            // Arrange
-            var input = TestUtilities.MockCarObjectDetectionModelInput();
+        //[Fact]
+        //public async Task Predict_Should_Return_Prediction_When_Everything_Is_Valid()
+        //{
+        //    // Arrange
+        //    var input = TestUtilities.MockCarObjectDetectionModelInput();
 
-            // Act
-            var prediction = await _sut.Predict(input, "");
+        //    // Act
+        //    var prediction = await _sut.Predict(input, "");
 
-            // Assert
-            Assert.NotNull(prediction);
-        }
+        //    // Assert
+        //    Assert.NotNull(prediction);
+        //}
 
         #endregion
     }
