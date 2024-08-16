@@ -49,7 +49,7 @@ namespace _2TCI_Backend.Controllers
             // Create new input
             var licensePlateInput = new ModelInputDto()
             {
-                ImageBase64String = inputForModel.ImageBase64String,
+                ImageBase64String = changedImage,
                 ModelType = ModelType.LicensePlateObjectDetection
             };
 
@@ -79,29 +79,36 @@ namespace _2TCI_Backend.Controllers
             {
                 using (Bitmap originalImage = new Bitmap(ms))
                 {
-                    // Create a Graphics object from the original image
-                    using (Graphics graphics = Graphics.FromImage(originalImage))
+                    // Define the rectangle to crop
+                    Rectangle cropRectangle = new Rectangle(xMin, yMin, xMax - xMin, yMax - yMin);
+
+                    // Ensure the rectangle is within the bounds of the original image
+                    cropRectangle.Intersect(new Rectangle(0, 0, originalImage.Width, originalImage.Height));
+
+                    // Create a new bitmap for the cropped image
+                    using (Bitmap croppedImage = new Bitmap(cropRectangle.Width, cropRectangle.Height))
                     {
-                        // Draw the rectangle on the image
-                        using (Pen pen = new Pen(Color.Red, 2)) // Red color and 2-pixel width
+                        // Create graphics object from the new bitmap
+                        using (Graphics graphics = Graphics.FromImage(croppedImage))
                         {
-                            graphics.DrawRectangle(pen, (xMin), (yMin + 50), 950, 800);
+                            // Draw the cropped area onto the new bitmap
+                            graphics.DrawImage(originalImage,
+                                               new Rectangle(0, 0, croppedImage.Width, croppedImage.Height),
+                                               cropRectangle,
+                                               GraphicsUnit.Pixel);
                         }
-                    }
 
-                    // Save the modified image to a MemoryStream
-                    using (MemoryStream msModified = new MemoryStream())
-                    {
-                        originalImage.Save(msModified, System.Drawing.Imaging.ImageFormat.Png);
+                        // Save the cropped image to a MemoryStream
+                        using (MemoryStream msCropped = new MemoryStream())
+                        {
+                            croppedImage.Save(msCropped, System.Drawing.Imaging.ImageFormat.Png);
 
-                        // Convert the MemoryStream to byte array (Base64 string representation)
-                        byte[] imageBytesModified = msModified.ToArray();
-                        string modifiedBase64 = Convert.ToBase64String(imageBytesModified);
+                            croppedImage.Save("Test.png");
 
-                        // Optionally, you can save the modified image to a file here
-                        originalImage.Save("Test.png");
-
-                        return modifiedBase64;
+                            // Convert the MemoryStream to byte array (Base64 string representation)
+                            byte[] imageBytesCropped = msCropped.ToArray();
+                            return Convert.ToBase64String(imageBytesCropped);
+                        }
                     }
                 }
             }
