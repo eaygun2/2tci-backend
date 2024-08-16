@@ -3,7 +3,7 @@ In this guide, we will explain the architecture of this project by walking throu
 
 Before proceeding further, here are a few recommendations:
 
-- [ ] Implement the Factory Pattern: This allows for the use of models in different formats, beyond just ONNX.
+- [ ] Implement the Factory Pattern: This allows for the use of models in different formats, beyond just ONNX. Also, it would be more efficient to handle the loading of models.
 - [ ] Optimize Model Loading in ModelService: Currently, the model needs to be loaded each time it is used. To save processing time, implement a method to ensure the model is loaded only once.
 - [ ] Consider using microservices: This allows that not all models, and thus the whole validation of vehicles, cannot be used if there is a sudden crash.
 
