@@ -7,7 +7,7 @@ using System.Drawing;
 namespace _2TCI_Backend.Controllers
 {
     [ApiController]
-    [Route("api/models")]
+    [Route("api/[controller]")]
     public class ModelController : ControllerBase
     {
         private readonly IRepositoryBase<DetectionModelOutputDto> _detectionrepository;
@@ -18,6 +18,14 @@ namespace _2TCI_Backend.Controllers
         {
             _detectionService = detectionService;
             _detectionrepository = detectionrepository;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            return StatusCode(StatusCodes.Status200OK, new Dictionary<string, object> {
+                { "Data", _detectionrepository.GetAll().ToList() },
+            });
         }
 
         [HttpPost("predict")]
